@@ -58,7 +58,8 @@ app.add_middleware(
         "http://localhost:5173",
         "https://gradea.app",
         "https://www.gradea.app",
-        "https://grade-a-gamma.vercel.app"
+        "https://grade-a-gamma.vercel.app",
+        "https://gradea-production.up.railway.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],

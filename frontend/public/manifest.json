@@ -1,0 +1,39 @@
+{
+  "name": "GradeA — Restaurant Inspection Prep",
+  "short_name": "GradeA",
+  "description": "Keep your NYC restaurant inspection-ready every day.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0C1524",
+  "theme_color": "#16A34A",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "/screenshot-dashboard.png", "sizes": "390x844", "type": "image/png", "form_factor": "narrow" }
+  ],
+  "categories": ["food", "business", "productivity"],
+  "shortcuts": [
+    {
+      "name": "Daily Checklist",
+      "short_name": "Checklist",
+      "url": "/checklist",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Log Temperature",
+      "short_name": "Temperature",
+      "url": "/temperatures",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Live Sensors",
+      "short_name": "Sensors",
+      "url": "/sensors",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

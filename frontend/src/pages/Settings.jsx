@@ -1,26 +1,26 @@
-import { useState, useEffect } from 'react'
-import AppLayout from '../components/AppLayout'
-import api from '../lib/api'
-import { useAuth } from '../hooks/useAuth'
-import { Check, Copy, RefreshCw, CreditCard, Loader, ExternalLink } from 'lucide-react'
+import AppLayout from "../components/AppLayout";
+import api from "../lib/api";
+import { Check, Copy, CreditCard, ExternalLink, Loader, RefreshCw } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useAuth } from "../hooks/useAuth";
 
 const PLANS = {
-  starter: { name: 'Starter', price: '$39/month', features: ['1 location','Up to 5 staff','Daily checklists','Temperature logging','Email alerts'] },
-  pro:     { name: 'Pro',     price: '$79/month', features: ['Up to 3 locations','Unlimited staff','AI risk report','Photo documentation','SMS alerts','Priority support'] },
+  starter: { name: 'Starter', price: '$39/month', features: ['1 location', 'Up to 5 staff', 'Daily checklists', 'Temperature logging', 'Email alerts'] },
+  pro: { name: 'Pro', price: '$79/month', features: ['Up to 3 locations', 'Unlimited staff', 'AI risk report', 'Photo documentation', 'SMS alerts', 'Priority support'] },
 }
 
 export default function Settings() {
-  const { user, signOut }           = useAuth()
+  const { user, signOut } = useAuth()
   const [restaurant, setRestaurant] = useState(null)
-  const [billing, setBilling]       = useState(null)
-  const [staffLink, setStaffLink]   = useState(null)
-  const [loading, setLoading]       = useState(true)
-  const [saving, setSaving]         = useState(false)
-  const [saved, setSaved]           = useState(false)
-  const [copied, setCopied]         = useState(false)
+  const [billing, setBilling] = useState(null)
+  const [staffLink, setStaffLink] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [upgrading, setUpgrading]   = useState('')
-  const [form, setForm]             = useState({})
+  const [upgrading, setUpgrading] = useState('')
+  const [form, setForm] = useState({})
 
   useEffect(() => { loadData() }, [])
 
@@ -36,7 +36,7 @@ export default function Settings() {
       setForm({
         name: r.data?.name || '',
         address: r.data?.address || '',
-        borough: r.data?.borough || '',
+        borough: r.data?.borough || 'Manhattan',
         cuisine_type: r.data?.cuisine_type || '',
         seating_capacity: r.data?.seating_capacity || 0,
         staff_count: r.data?.staff_count || 0,
@@ -86,7 +86,7 @@ export default function Settings() {
   }
 
   const cancelSub = async () => {
-    if (!confirm('Cancel your subscription? You'll keep access until end of billing period.')) return
+    if (!confirm("Cancel your subscription? You'll keep access until end of billing period.")) return
     try {
       await api.post('/api/payments/cancel')
       alert('Subscription will cancel at end of billing period.')
@@ -139,7 +139,8 @@ export default function Settings() {
               <div>
                 <label className="label">Borough</label>
                 <select className="input" value={form.borough || ''} onChange={e => setForm(f => ({ ...f, borough: e.target.value }))}>
-                  {['Manhattan','Brooklyn','Queens','Bronx','Staten Island'].map(b => <option key={b}>{b}</option>)}
+                  <option value="" disabled>Select a borough</option>
+                  {['Manhattan', 'Brooklyn', 'Queens', 'Bronx', 'Staten Island'].map(b => <option key={b}>{b}</option>)}
                 </select>
               </div>
               <div>

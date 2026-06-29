@@ -212,7 +212,13 @@ async def submit_staff_checklist(token: str, data: StaffSubmission):
 
     restaurant_id = restaurant.data[0]["id"]
     all_items = get_checklist(restaurant.data[0]["cuisine_type"])
-    stats = calculate_score(data.checklist_data, len(all_items))
+    custom_result = db.table("custom_checklist_items") \
+        .select("id") \
+        .eq("restaurant_id", restaurant_id) \
+        .eq("is_active", True) \
+        .execute()
+    total_items = len(all_items) + len(custom_result.data or [])
+    stats = calculate_score(data.checklist_data, total_items)
 
     result = db.table("checklist_submissions").insert({
         "restaurant_id": restaurant_id,

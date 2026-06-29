@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import AppLayout from '../components/AppLayout'
 import api from '../lib/api'
 import {
-  Plus, Edit2, Trash2, Toggle, Camera, Shield,
+  Plus, Edit2, Trash2, Camera, Shield,
   GripVertical, ChevronDown, ChevronUp, Zap,
   CheckCircle, AlertTriangle, Eye, Save, X, Loader,
   Image, Brain, Clock, Hash

@@ -161,8 +161,9 @@ CREATE POLICY "owner_qr_codes"      ON item_qr_codes                FOR ALL USIN
 CREATE POLICY "owner_voice_notes"   ON voice_notes                  FOR ALL USING (restaurant_id IN (SELECT own_restaurant_ids(auth.uid())));
 
 -- ─────────────────────────────────────────
--- SUPABASE STORAGE BUCKET
--- Run this separately in Supabase dashboard OR via management API
+-- SUPABASE STORAGE BUCKET (checklist photo evidence)
+-- Run in Supabase SQL editor if the API auto-create step fails
 -- ─────────────────────────────────────────
--- INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
--- VALUES ('checklist-photos', 'checklist-photos', false, 10485760, '{"image/jpeg","image/png","image/webp"}');
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('checklist-photos', 'checklist-photos', true, 10485760, '{"image/jpeg","image/png","image/webp"}')
+ON CONFLICT (id) DO NOTHING;

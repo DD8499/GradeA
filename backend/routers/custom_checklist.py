@@ -5,7 +5,8 @@ Photo Upload Router — handles photo capture, validation, and storage
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from typing import Optional, List
-from auth import get_supabase, get_user_id
+from datetime import date
+from auth import get_supabase, get_user_id, get_restaurant_for_checklist
 from services.photo_validator import validate_photo, compute_phash
 import secrets, os, base64
 from datetime import datetime, timezone, timedelta
@@ -108,35 +109,25 @@ async def reorder_items(order: List[str], user_id: str = Depends(get_user_id)):
     return {"success": True}
 
 
-# ── Combined checklist (NYC DOH + custom) ────────────────────
-@custom_router.get("/combined")
-async def get_combined_checklist(user_id: str = Depends(get_user_id)):
+def _build_combined_checklist(restaurant: dict, db) -> dict:
     """Return NYC DOH violations + custom items, grouped by category."""
     from data.violations_db import get_checklist, CATEGORIES as DOH_CATS
-    db = get_supabase()
-    restaurant = db.table("restaurants").select("id,cuisine_type").eq("owner_id", user_id).limit(1).execute()
-    if not restaurant.data:
-        raise HTTPException(404, "Restaurant not found")
 
-    r = restaurant.data[0]
-    rid = r["id"]
+    rid = restaurant["id"]
 
-    # NYC DOH items
-    doh_items = get_checklist(r["cuisine_type"])
+    doh_items = get_checklist(restaurant["cuisine_type"])
     for item in doh_items:
         item["item_type"] = "doh"
         item["photo_required"] = False
         item["photo_validation"] = "none"
 
-    # Custom items
     custom_result = db.table("custom_checklist_items").select("*").eq("restaurant_id", rid).eq("is_active", True).order("sort_order").execute()
     custom_items = custom_result.data or []
     for item in custom_items:
         item["item_type"] = "custom"
-        item["code"] = str(item["id"])[:8].upper()  # short display code
+        item["code"] = str(item["id"])[:8].upper()
         item["severity"] = item.get("severity", "general")
 
-    # Group by category
     all_items = doh_items + custom_items
     grouped = {}
 
@@ -148,11 +139,23 @@ async def get_combined_checklist(user_id: str = Depends(get_user_id)):
         grouped[cat]["items"].append(item)
 
     return {
+        "restaurant_id": rid,
+        "restaurant_name": restaurant.get("name"),
+        "today": date.today().isoformat(),
         "categories": list(grouped.values()),
         "total_doh": len(doh_items),
         "total_custom": len(custom_items),
         "total": len(all_items),
+        "total_items": len(all_items),
     }
+
+
+# ── Combined checklist (NYC DOH + custom) ────────────────────
+@custom_router.get("/combined")
+async def get_combined_checklist(restaurant: dict = Depends(get_restaurant_for_checklist)):
+    """Return NYC DOH violations + custom items. Accepts owner JWT or X-Staff-Token."""
+    db = get_supabase()
+    return _build_combined_checklist(restaurant, db)
 
 
 # ════════════════════════════════════════════════
@@ -167,16 +170,19 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 async def upload_to_supabase_storage(photo_bytes: bytes, restaurant_id: str, item_id: str, filename: str) -> str:
     """Upload photo to Supabase Storage and return public URL."""
     from supabase import create_client
+    from services.storage_setup import ensure_checklist_photos_bucket, CHECKLIST_PHOTOS_BUCKET
+
     db = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+    ensure_checklist_photos_bucket(db)
 
     path = f"{restaurant_id}/{item_id}/{filename}"
     try:
-        db.storage.from_("checklist-photos").upload(
+        db.storage.from_(CHECKLIST_PHOTOS_BUCKET).upload(
             path=path,
             file=photo_bytes,
             file_options={"content-type": "image/jpeg", "upsert": "true"},
         )
-        url = db.storage.from_("checklist-photos").get_public_url(path)
+        url = db.storage.from_(CHECKLIST_PHOTOS_BUCKET).get_public_url(path)
         return url
     except Exception as e:
         raise HTTPException(500, f"Photo storage failed: {str(e)}")

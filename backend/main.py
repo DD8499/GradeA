@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from contextlib import asynccontextmanager
 import uvicorn
+from postgrest.exceptions import APIError
 
 from routers import (
     restaurants, checklists, temperatures,
@@ -17,6 +19,12 @@ from routers.extras import (
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("GradeA API v2 starting...")
+    try:
+        from services.storage_setup import ensure_checklist_photos_bucket
+        ensure_checklist_photos_bucket()
+        print("Storage bucket ready: checklist-photos")
+    except Exception as exc:
+        print(f"Warning: could not ensure checklist-photos bucket: {exc}")
     yield
     print("Shutting down...")
 
@@ -35,6 +43,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(APIError)
+async def api_error_handler(request: Request, exc: APIError):
+    if getattr(exc, "code", None) == "PGRST205":
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": "Supabase table is not available yet. Please run the schema SQL in your Supabase project.",
+                "error": str(exc),
+            },
+        )
+    return JSONResponse(status_code=502, content={"detail": "Supabase request failed", "error": str(exc)})
 
 app.include_router(restaurants.router,   prefix="/api/restaurants",   tags=["Restaurants"])
 app.include_router(checklists.router,    prefix="/api/checklists",    tags=["Checklists"])
@@ -63,7 +83,6 @@ def health():
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
-
 # V3 additions — append to existing imports and app
 from routers.custom_checklist import custom_router, photo_router
 
